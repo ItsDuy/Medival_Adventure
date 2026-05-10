@@ -12,7 +12,14 @@ public class PlayerController : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private Animator animator;
-    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Transform visualsRoot;
+    [SerializeField] private Transform bowTransform;
+
+    [Header("Bow Rotation")]
+    [SerializeField] private float bowUpAngle = -50f;
+    [SerializeField] private float bowMiddleAngle = 0f;
+    [SerializeField] private float bowDownAngle = 50f;
+    [SerializeField] private float bowSectionAngle = 25f;
 
     private Vector2 velocity;
     private Camera mainCamera;
@@ -24,9 +31,9 @@ public class PlayerController : MonoBehaviour
             animator = GetComponent<Animator>();
         }
 
-        if (spriteRenderer == null)
+        if (visualsRoot == null)
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            visualsRoot = transform;
         }
 
         mainCamera = Camera.main;
@@ -43,6 +50,7 @@ public class PlayerController : MonoBehaviour
 
         ApplyMovement(input, Time.deltaTime);
         ApplyMouseFlip();
+        UpdateBowRotation();
         UpdateAnimator(input);
     }
 
@@ -70,7 +78,7 @@ public class PlayerController : MonoBehaviour
 
     private void ApplyMouseFlip()
     {
-        if (mainCamera == null || spriteRenderer == null)
+        if (mainCamera == null || visualsRoot == null)
         {
             return;
         }
@@ -80,7 +88,9 @@ public class PlayerController : MonoBehaviour
 
         if (Mathf.Abs(deltaX) > 0.001f)
         {
-            spriteRenderer.flipX = deltaX < 0f;
+            Vector3 scale = visualsRoot.localScale;
+            scale.x = Mathf.Abs(scale.x) * (deltaX < 0f ? -1f : 1f);
+            visualsRoot.localScale = scale;
         }
     }
 
@@ -95,5 +105,37 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("isMoving", isMoving);
         animator.SetFloat("MoveX", input.x);
         animator.SetFloat("MoveY", input.y);
+    }
+
+    private void UpdateBowRotation()
+    {
+        if (mainCamera == null || bowTransform == null)
+        {
+            return;
+        }
+
+        Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 direction = mouseWorld - bowTransform.position;
+        if (direction.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        float angleFromHorizontal = Mathf.Atan2(direction.y, Mathf.Abs(direction.x)) * Mathf.Rad2Deg;
+        float targetAngle;
+        if (angleFromHorizontal > bowSectionAngle)
+        {
+            targetAngle = bowUpAngle;
+        }
+        else if (angleFromHorizontal < -bowSectionAngle)
+        {
+            targetAngle = bowDownAngle;
+        }
+        else
+        {
+            targetAngle = bowMiddleAngle;
+        }
+
+        bowTransform.localRotation = Quaternion.Euler(0f, 0f, -targetAngle);
     }
 }
