@@ -13,13 +13,7 @@ public class PlayerController : MonoBehaviour
     [Header("References")]
     [SerializeField] private Animator animator;
     [SerializeField] private Transform visualsRoot;
-    [SerializeField] private Transform bowTransform;
-
-    [Header("Bow Rotation")]
-    [SerializeField] private float bowUpAngle = -50f;
-    [SerializeField] private float bowMiddleAngle = 0f;
-    [SerializeField] private float bowDownAngle = 50f;
-    [SerializeField] private float bowSectionAngle = 25f;
+    [SerializeField] private Transform attackPoint;
 
     private Vector2 velocity;
     private Camera mainCamera;
@@ -50,7 +44,6 @@ public class PlayerController : MonoBehaviour
 
         ApplyMovement(input, Time.deltaTime);
         ApplyMouseFlip();
-        UpdateBowRotation();
         UpdateAnimator(input);
     }
 
@@ -105,37 +98,5 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("isMoving", isMoving);
         animator.SetFloat("MoveX", input.x);
         animator.SetFloat("MoveY", input.y);
-    }
-
-    private void UpdateBowRotation()
-    {
-        if (mainCamera == null || bowTransform == null)
-        {
-            return;
-        }
-
-        Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-        Vector2 direction = mouseWorld - bowTransform.position;
-        if (direction.sqrMagnitude < 0.0001f)
-        {
-            return;
-        }
-
-        float angleFromHorizontal = Mathf.Atan2(direction.y, Mathf.Abs(direction.x)) * Mathf.Rad2Deg;
-        float targetAngle;
-        if (angleFromHorizontal > bowSectionAngle)
-        {
-            targetAngle = bowUpAngle;
-        }
-        else if (angleFromHorizontal < -bowSectionAngle)
-        {
-            targetAngle = bowDownAngle;
-        }
-        else
-        {
-            targetAngle = bowMiddleAngle;
-        }
-
-        bowTransform.localRotation = Quaternion.Euler(0f, 0f, -targetAngle);
     }
 }
