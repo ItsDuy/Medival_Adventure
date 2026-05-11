@@ -16,7 +16,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform attackPoint;
 
     private Vector2 velocity;
-    private Camera mainCamera;
 
     private void Awake()
     {
@@ -30,7 +29,6 @@ public class PlayerController : MonoBehaviour
             visualsRoot = transform;
         }
 
-        mainCamera = Camera.main;
     }
 
     // Update is called once per frame
@@ -43,7 +41,7 @@ public class PlayerController : MonoBehaviour
         }
 
         ApplyMovement(input, Time.deltaTime);
-        ApplyMouseFlip();
+        ApplyInputFlip(input);
         UpdateAnimator(input);
     }
 
@@ -69,20 +67,17 @@ public class PlayerController : MonoBehaviour
         transform.position += (Vector3)(velocity * deltaTime);
     }
 
-    private void ApplyMouseFlip()
+    private void ApplyInputFlip(Vector2 input)
     {
-        if (mainCamera == null || visualsRoot == null)
+        if (visualsRoot == null)
         {
             return;
         }
 
-        Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-        float deltaX = mouseWorld.x - transform.position.x;
-
-        if (Mathf.Abs(deltaX) > 0.001f)
+        if (Mathf.Abs(input.x) > 0.001f)
         {
             Vector3 scale = visualsRoot.localScale;
-            scale.x = Mathf.Abs(scale.x) * (deltaX < 0f ? -1f : 1f);
+            scale.x = Mathf.Abs(scale.x) * (input.x < 0f ? -1f : 1f);
             visualsRoot.localScale = scale;
         }
     }
