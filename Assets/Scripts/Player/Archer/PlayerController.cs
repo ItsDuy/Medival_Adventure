@@ -14,6 +14,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private Transform visualsRoot;
     [SerializeField] private Transform attackPoint;
+    [SerializeField] private PlayerAttack playerAttack;
+
+    [Header("Facing")]
+    [SerializeField] private bool faceEnemyInRange = true;
+    [SerializeField] private float enemyFaceRadius = 1.5f;
+    [SerializeField] private LayerMask enemyMask;
 
     private Vector2 velocity;
 
@@ -29,6 +35,11 @@ public class PlayerController : MonoBehaviour
             visualsRoot = transform;
         }
 
+        if (playerAttack == null)
+        {
+            playerAttack = GetComponent<PlayerAttack>();
+        }
+
     }
 
     // Update is called once per frame
@@ -41,7 +52,7 @@ public class PlayerController : MonoBehaviour
         }
 
         ApplyMovement(input, Time.deltaTime);
-        ApplyInputFlip(input);
+        UpdateFacing(input);
         UpdateAnimator(input);
     }
 
@@ -78,6 +89,103 @@ public class PlayerController : MonoBehaviour
         {
             Vector3 scale = visualsRoot.localScale;
             scale.x = Mathf.Abs(scale.x) * (input.x < 0f ? -1f : 1f);
+            visualsRoot.localScale = scale;
+        }
+    }
+
+    private void UpdateFacing(Vector2 input)
+    {
+        if (!faceEnemyInRange)
+        {
+            ApplyInputFlip(input);
+            return;
+        }
+
+        Transform enemy = FindEnemyInRange();
+        if (enemy != null)
+        {
+            Vector2 direction = enemy.position - transform.position;
+            ApplyTargetFlip(direction);
+            return;
+        }
+
+        ApplyInputFlip(input);
+    }
+
+    private Transform FindEnemyInRange()
+    {
+        if (playerAttack != null && playerAttack.CurrentTarget != null)
+        {
+            return playerAttack.CurrentTarget;
+        }
+
+        float radius = enemyFaceRadius;
+        LayerMask mask = enemyMask;
+        if (playerAttack != null)
+        {
+            if (radius <= 0f)
+            {
+                radius = playerAttack.AttackRadius;
+            }
+
+            if (mask.value == 0)
+            {
+                mask = playerAttack.EnemyMask;
+            }
+        }
+
+        if (radius <= 0f || mask.value == 0)
+        {
+            return null;
+        }
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius, mask);
+        if (hits == null || hits.Length == 0)
+        {
+            return null;
+        }
+
+        Transform closest = hits[0].transform;
+        float bestSqr = (closest.position - transform.position).sqrMagnitude;
+        for (int i = 1; i < hits.Length; i++)
+        {
+            float sqr = (hits[i].transform.position - transform.position).sqrMagnitude;
+            if (sqr < bestSqr)
+            {
+                bestSqr = sqr;
+                closest = hits[i].transform;
+            }
+        }
+
+        return closest;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        float radius = enemyFaceRadius;
+        if (playerAttack != null && radius <= 0f)
+        {
+            radius = playerAttack.AttackRadius;
+        }
+
+        if (radius > 0f)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(transform.position, radius);
+        }
+    }
+
+    private void ApplyTargetFlip(Vector2 direction)
+    {
+        if (visualsRoot == null)
+        {
+            return;
+        }
+
+        if (Mathf.Abs(direction.x) > 0.001f)
+        {
+            Vector3 scale = visualsRoot.localScale;
+            scale.x = Mathf.Abs(scale.x) * (direction.x < 0f ? -1f : 1f);
             visualsRoot.localScale = scale;
         }
     }
